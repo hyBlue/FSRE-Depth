@@ -6,3 +6,5 @@ This is a Python3 / PyTorch implementation of FSRE-Depth, as described in the fo
 > Hyunyoung Jung, Eunhyeok Park and Sungjoo Yoo
 >
 > To appear in ICCV 2021 (oral)
+> 
+> [arXiv pdf](http://arxiv.org/abs/2108.08829)
