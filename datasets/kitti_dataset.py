@@ -232,9 +232,8 @@ class KittiDataset(data.Dataset):
 
     def get_seg_map(self, folder, frame_index, side, do_flip):
         path = self.get_image_path(folder, frame_index, side)
-        path = path.replace('/SSD/Kitti', '/SSD/Kitti/segmentation')
-        image_ = "image_0{}".format(self.side_map[side])
-        path = path.replace(image_ + '/data', 'semantic_prediction/' + image_)
+        path = path.replace('Kitti', 'Kitti/segmentation')
+        path = path.replace('/data', '')
 
         seg = self.loader(path, mode='P')
         seg_copy = np.array(seg.copy())

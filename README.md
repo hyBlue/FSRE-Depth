@@ -17,7 +17,7 @@ This code was implemented under torch==1.3.0 and torchvision==0.4.1, using two N
 pip install -r requirements.txt
 ```
 ## Dataset
-[KITTI Raw Data](http://www.cvlibs.net/datasets/kitti/raw_data.php) and pre-computed segmentation images (will be uploaded soon) are required for training.
+[KITTI Raw Data](http://www.cvlibs.net/datasets/kitti/raw_data.php) and pre-computed [segmentation images](https://drive.google.com/file/d/1FNxJzGTfP1O_pUX9Va7d0dqZWtRi833X/view?usp=sharing) are required for training. 
 
 ```
 KITTI/
@@ -26,11 +26,11 @@ KITTI/
     ├── 2011_09_29/
     ├── 2011_09_30/
     ├── 2011_10_03/
-    └── segmentation/   # pre-computed segmentation images
+    └── segmentation/   # download and unzip "segmentation.zip" 
 ```
 
 ## Training
-For trainin the full model, run the command as below:
+For training the full model, run the command as below:
 ```
 CUDA_VISIBLE_DEVICES=0,1 python -m torch.distributed.launch --nproc_per_node 2 --master_port YOUR_PORT_NUMBER train_ddp.py --dapa_path YOUR_KITTI_DATA_PATH
 ```
