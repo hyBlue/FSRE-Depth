@@ -1,6 +1,8 @@
 import os
-import numpy as np
 from collections import Counter
+
+import numpy as np
+
 
 def transform_from_rot_trans(R, t):
     """Transforation matrix from rotation matrix and translation vector."""
@@ -100,6 +102,7 @@ def generate_depth_map(calib_dir, velo_filename, cam=2, vel_depth=False):
 
     return depth
 
+
 def rotx(t):
     """Rotation about the x-axis."""
     c = np.cos(t)
@@ -108,6 +111,7 @@ def rotx(t):
                      [0, c, -s],
                      [0, s, c]])
 
+
 def roty(t):
     """Rotation about the y-axis."""
     c = np.cos(t)
@@ -115,6 +119,7 @@ def roty(t):
     return np.array([[c, 0, s],
                      [0, 1, 0],
                      [-s, 0, c]])
+
 
 def rotz(t):
     """Rotation about the z-axis."""

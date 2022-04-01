@@ -1,15 +1,15 @@
-from datasets.kitti_utils import *
-import skimage.transform
-import os
 import random
-import numpy as np
-from PIL import Image
+from copy import deepcopy
+
+import PIL.Image as pil
+import skimage.transform
 import torch
 import torch.utils.data as data
+from PIL import Image
 from torchvision import transforms
-import PIL.Image as pil
+
+from datasets.kitti_utils import *
 from utils.seg_utils import labels
-from copy import deepcopy
 
 
 def pil_loader(path, mode='RGB'):
@@ -42,10 +42,10 @@ class KittiDataset(data.Dataset):
                  width,
                  frame_idxs,
                  filenames,
-                 data_path='/SSD/Kitti',
-                 is_train=False,
+                 data_path,
+                 num_scales,
+                 is_train,
                  img_ext='.png',
-                 num_scales=1,
                  ):
         super(KittiDataset, self).__init__()
 

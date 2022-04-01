@@ -11,6 +11,7 @@ This is a Python3 / PyTorch implementation of FSRE-Depth, as described in the fo
 
 
 The code was implemented based on [Monodepth2](https://github.com/nianticlabs/monodepth2).
+
 ## Setup
 This code was implemented under torch==1.3.0 and torchvision==0.4.1, using two NVIDIA TITAN Xp gpus with distrutibted training. Different version may produce different results.
 ```
@@ -36,9 +37,22 @@ CUDA_VISIBLE_DEVICES=0,1 python -m torch.distributed.launch --nproc_per_node 2 -
 ```
 
 ## Evaluation
+```
+MODEL_DIR
+    ├── encoder.pth  # required      
+    ├── decoder.pth  # required             
+    ├── ...
+```
+For evalution, run the command as below:
+```
+python evaluate_depth.py --load_weights_folder YOUR_MODEL_DIR --data_path YOUR_KITTI_DATA_PATH
+```
 
 ## Download Models
-will be uploaded soon
+
+| Backbone | Input  |Download                                                                                              |AbsRel | SqRel | Rms | RmsLog | delta < 1.25 |    delta < 1.25^2 |   delta < 1.25^3  |
+|----------|-------------|--------------------------------------------------------------------------------------------------|--------|--------|--------|--------|--------|--------|--------|
+| ResNet-18| 192 x 640   |[Drive (.zip)](https://drive.google.com/file/d/14uT9DyCU0UKynfBnzymaStRiL0sJmqt2/view?usp=sharing)| 0.105  |  0.708  |  4.546  |  0.182  |  0.886  |  0.964  |  0.983|         
 
 ## Reference
 Please use the following citation when referencing our work:

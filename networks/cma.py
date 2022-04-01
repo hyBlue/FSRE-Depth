@@ -1,6 +1,6 @@
 from networks.depth_decoder import DepthDecoder
-from networks.seg_decoder import SegDecoder
 from networks.multi_embedding import MultiEmbedding
+from networks.seg_decoder import SegDecoder
 from utils.depth_utils import *
 
 

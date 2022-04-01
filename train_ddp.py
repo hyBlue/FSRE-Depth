@@ -1,20 +1,22 @@
-from torch.utils.data import DataLoader
-from tensorboardX import SummaryWriter
-from trainer_parallel import TrainerParallel
-from utils import *
-from utils.seg_utils import decode_seg_map
-from utils.depth_utils import compute_depth_errors
-from datasets.kitti_dataset import KittiDataset
+import json
 import os
 import time
+from datetime import datetime
+
 import torch
 import torch.nn.functional as F
 import torch.optim as optim
-import json
+from tensorboardX import SummaryWriter
 from torch import distributed as dist
-from datetime import datetime
-from torch.utils.data.distributed import DistributedSampler as DistributedSampler
 from torch.nn.parallel import DistributedDataParallel as DDP
+from torch.utils.data import DataLoader
+from torch.utils.data.distributed import DistributedSampler as DistributedSampler
+
+from datasets.kitti_dataset import KittiDataset
+from trainer_parallel import TrainerParallel
+from utils import *
+from utils.depth_utils import compute_depth_errors
+from utils.seg_utils import decode_seg_map
 
 
 def reduce_tensor(tensor, world_size):
@@ -52,17 +54,16 @@ class Trainer:
 
         train_filenames = readlines(fpath.format("train"))
 
-        val_filenames = readlines(fpath.format("val"))
         train_dataset = KittiDataset(
-            self.opt.height, self.opt.width,
-            self.opt.frame_ids, train_filenames, is_train=True,
+            height=self.opt.height, width=self.opt.width,
+            frame_idxs=self.opt.frame_ids, filenames=train_filenames, data_path=self.opt.data_path, is_train=True,
             num_scales=len(self.opt.scales))
 
+        val_filenames = readlines(fpath.format("val"))
         val_dataset = KittiDataset(
-            self.opt.height, self.opt.width,
-            self.opt.frame_ids, val_filenames, is_train=False,
-            num_scales=len(self.opt.scales)
-           )
+            height=self.opt.height, width=self.opt.width,
+            frame_idxs=self.opt.frame_ids, filenames=val_filenames, data_path=self.opt.data_path, is_train=False,
+            num_scales=len(self.opt.scales))
         if self.opt.local_rank == 0:
             self.writers = {}
             for mode in ["train", "val"]:
@@ -189,8 +190,6 @@ class Trainer:
                 else:
                     for loss_type in losses:
                         train_loss[loss_type] += float(losses[loss_type].data.mean())
-
-
 
         if self.opt.local_rank == 0:
             for key in train_loss:
@@ -410,6 +409,7 @@ class Trainer:
 
 if __name__ == '__main__':
     from options import Options
+
     options = Options()
     opts = options.parse()
 

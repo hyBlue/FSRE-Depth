@@ -1,20 +1,19 @@
+import argparse
 import os
 
-import argparse
-import numpy as np
 import PIL.Image as pil
+import numpy as np
 
-from utils import readlines
 from datasets.kitti_utils import generate_depth_map
+from utils import readlines
 
 
 def export_gt_depths_kitti():
-
     parser = argparse.ArgumentParser(description='export_gt_depth')
 
     parser.add_argument('--data_path',
                         type=str,
-                        default='/SSD/Kitti',)
+                        required=True)
     parser.add_argument('--split',
                         type=str,
                         help='which split to export gt from',

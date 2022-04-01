@@ -1,13 +1,14 @@
-from networks.resnet_encoder import ResnetEncoder
-from networks.depth_decoder import DepthDecoder
-from networks.seg_decoder import SegDecoder
-from networks.pose_decoder import PoseDecoder
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
 from networks.cma import CMA
+from networks.depth_decoder import DepthDecoder
+from networks.pose_decoder import PoseDecoder
+from networks.resnet_encoder import ResnetEncoder
+from networks.seg_decoder import SegDecoder
 from utils.depth_utils import BackprojectDepth, Project3D, disp_to_depth, SSIM, get_smooth_loss, \
     transformation_from_parameters
-import torch
-import torch.nn.functional as F
-import torch.nn as nn
 
 
 class TrainerParallel(nn.Module):
@@ -111,8 +112,7 @@ class TrainerParallel(nn.Module):
             outputs.update(disp)
             for s in self.opt.scales:
                 if s > 0:
-                    disp = F.interpolate(outputs[("disp", s)], (self.opt.height, self.opt.width), mode='bilinear',
-                                         align_corners=True)
+                    disp = F.interpolate(outputs[("disp", s)], (self.opt.height, self.opt.width), mode='bilinear', align_corners=False)
                 else:
                     disp = outputs[("disp", s)]
                 _, depth = disp_to_depth(disp, self.opt.min_depth, self.opt.max_depth)
@@ -128,7 +128,7 @@ class TrainerParallel(nn.Module):
             for s in self.opt.scales:
                 if s > 0:
                     disp = F.interpolate(outputs[("disp", s)], (self.opt.height, self.opt.width), mode='bilinear',
-                                         align_corners=True)
+                                         align_corners=False)
                 else:
                     disp = outputs[("disp", s)]
                 _, depth = disp_to_depth(disp, self.opt.min_depth, self.opt.max_depth)
@@ -212,8 +212,8 @@ class TrainerParallel(nn.Module):
             for frame_id in self.opt.frame_ids[1:]:
                 outputs[("color", frame_id, s)] = pred = F.grid_sample(inputs[("color", frame_id, 0)],
                                                                        outputs[("sample", frame_id, s)],
-                                                                       padding_mode="border",
-                                                                       align_corners=True)
+                                                                       padding_mode="border", align_corners=True
+                                                                       )
                 reprojection_loss = self.reprojection_loss(pred, target)
                 outputs[("reprojection_loss", frame_id)] = reprojection_loss
 

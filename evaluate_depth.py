@@ -1,15 +1,17 @@
 import os
+
 import cv2
-from networks.resnet_encoder import ResnetEncoder
-from networks.depth_decoder import DepthDecoder
 import numpy as np
 import torch
 from torch.utils.data import DataLoader
-from utils import readlines
-from options import Options
+
 from datasets.kitti_dataset import KittiDataset
-from utils.depth_utils import disp_to_depth
 from networks.cma import CMA
+from networks.depth_decoder import DepthDecoder
+from networks.resnet_encoder import ResnetEncoder
+from options import Options
+from utils import readlines
+from utils.depth_utils import disp_to_depth
 
 cv2.setNumThreads(0)  # This speeds up evaluation 5x on our unix systems (OpenCV 3.3.1)
 
@@ -64,9 +66,9 @@ def evaluate(opt):
         decoder_path = os.path.join(opt.load_weights_folder, "depth.pth")
 
         encoder_dict = torch.load(encoder_path)
-        dataset = KittiDataset(encoder_dict['height'], encoder_dict['width'],
-                               [0], filenames, data_path=opt.data_path, is_train=False, fix_K=opt.fix_K
-                               )
+        dataset = KittiDataset(height=encoder_dict['height'], width=encoder_dict['width'],
+                               frame_idxs=[0], filenames=filenames, data_path=opt.data_path, is_train=False,
+                               num_scales=len(opt.scales))
         dataloader = DataLoader(dataset, 16, shuffle=False, num_workers=12,
                                 pin_memory=True, drop_last=False)
         encoder = ResnetEncoder(num_layers=opt.num_layers)
@@ -88,7 +90,6 @@ def evaluate(opt):
         depth_decoder.cuda()
         depth_decoder.eval()
         pred_disps = []
-        pred_segs = None
         models = {}
 
         models['encoder'] = encoder
@@ -103,7 +104,7 @@ def evaluate(opt):
                 input_color = data[("color", 0, 0)]
                 features = models['encoder'](input_color)
                 if not opt.no_cma:
-                    output = models['depth'](features, mode='depth')
+                    output, _ = models['depth'](features)
                 else:
                     output = models["depth"](features)
                 pred_disp = output[("disp", 0)]

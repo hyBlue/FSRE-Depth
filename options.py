@@ -1,12 +1,12 @@
-import os
 import argparse
+import os
 
 PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
-
 
 class Options:
     def __init__(self):
         self.parser = argparse.ArgumentParser()
+
 
         # PATHS
         self.parser.add_argument("--data_path",
@@ -165,7 +165,6 @@ class Options:
         self.parser.add_argument("--head_ratio", type=float, default=2, help='embedding dimension ratio for cma module')
         self.parser.add_argument("--cma_layers", nargs="+", type=int, default=[3, 2, 1],
                                  help='layer configurations for cma module')
-        self.parser.add_argument("--fix_K", action='store_true', default=False)
 
     def parse(self):
         self.options = self.parser.parse_args()
