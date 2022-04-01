@@ -37,15 +37,23 @@ CUDA_VISIBLE_DEVICES=0,1 python -m torch.distributed.launch --nproc_per_node 2 -
 ```
 
 ## Evaluation
+The ground truth depth maps should be prepared prior to evaluation. 
+```
+python export_gt_depth.py --data_path YOUR_KITTI_DATA_PATH --split eigen
+```
+
+MODEL_DIR should be configured as below:
+
 ```
 MODEL_DIR
     ├── encoder.pth  # required      
     ├── decoder.pth  # required             
     ├── ...
 ```
-For evalution, run the command as below:
+
+Run the evaluation command.
 ```
-python evaluate_depth.py --load_weights_folder YOUR_MODEL_DIR --data_path YOUR_KITTI_DATA_PATH
+python evaluate_depth.py --load_weights_folder MODEL_DIR --data_path YOUR_KITTI_DATA_PATH
 ```
 
 ## Download Models
