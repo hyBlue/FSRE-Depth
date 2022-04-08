@@ -33,7 +33,7 @@ KITTI/
 ## Training
 For training the full model, run the command as below:
 ```
-CUDA_VISIBLE_DEVICES=0,1 python -m torch.distributed.launch --nproc_per_node 2 --master_port YOUR_PORT_NUMBER train_ddp.py --dapa_path YOUR_KITTI_DATA_PATH
+CUDA_VISIBLE_DEVICES=0,1 python -m torch.distributed.launch --nproc_per_node 2 --master_port YOUR_PORT_NUMBER train_ddp.py --data_path YOUR_KITTI_DATA_PATH
 ```
 
 ## Evaluation
