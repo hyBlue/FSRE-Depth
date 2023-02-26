@@ -148,7 +148,7 @@ class KittiDataset(data.Dataset):
 
         if side is None:
             if do_color_aug:
-                color_aug = transforms.ColorJitter.get_params(
+                color_aug = transforms.ColorJitter(
                     self.brightness, self.contrast, self.saturation, self.hue)
             else:
                 color_aug = (lambda x: x)
@@ -168,7 +168,7 @@ class KittiDataset(data.Dataset):
         inputs[("inv_K")] = torch.from_numpy(inv_K)
 
         if do_color_aug:
-            color_aug = transforms.ColorJitter.get_params(
+            color_aug = transforms.ColorJitter(
                 self.brightness, self.contrast, self.saturation, self.hue)
         else:
             color_aug = (lambda x: x)
@@ -233,7 +233,10 @@ class KittiDataset(data.Dataset):
     def get_seg_map(self, folder, frame_index, side, do_flip):
         path = self.get_image_path(folder, frame_index, side)
         path = path.replace('Kitti', 'Kitti/segmentation')
-        path = path.replace('/data', '')
+        # path = path.replace('/data', '')
+        p = path.rfind('/data/')
+        path = path[0:p] + path[p+5:]
+
 
         seg = self.loader(path, mode='P')
         seg_copy = np.array(seg.copy())

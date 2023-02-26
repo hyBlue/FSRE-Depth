@@ -129,3 +129,7 @@ dmypy.json
 .pyre/
 
 .idea/
+
+tmp/
+nohup.out
+gt_depths.npz
