@@ -10,6 +10,8 @@ from networks.seg_decoder import SegDecoder
 from utils.depth_utils import BackprojectDepth, Project3D, disp_to_depth, SSIM, get_smooth_loss, \
     transformation_from_parameters
 
+import pdb
+
 
 class TrainerParallel(nn.Module):
     def __init__(self, options):
@@ -28,7 +30,8 @@ class TrainerParallel(nn.Module):
             'pose': PoseDecoder(self.models['pose_encoder'].num_ch_enc)
         })
 
-        if not self.opt.no_cma:
+        # CMA: Crosstask Multiembedding Attention Moduel, by default, we enable this module.
+        if not self.opt.no_cma:  # default True
             self.models.update({
                 'decoder': CMA(self.models['encoder'].num_ch_enc, opt=self.opt)
             })
@@ -88,6 +91,7 @@ class TrainerParallel(nn.Module):
         features = {}
         center = inputs[("color_aug", 0, 0)]
 
+        # For the default encoder (ResNet), the encoder's output is the C1, C2, ... , C5 of ResNet.
         features[0] = self.models["encoder"](center)
         for frame_id in self.opt.frame_ids[1:]:
             color_aug = inputs[("color_aug", frame_id, 0)]
