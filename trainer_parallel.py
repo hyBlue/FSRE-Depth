@@ -10,7 +10,19 @@ from networks.seg_decoder import SegDecoder
 from utils.depth_utils import BackprojectDepth, Project3D, disp_to_depth, SSIM, get_smooth_loss, \
     transformation_from_parameters
 
+from networks.cma import CMA
+from networks.roiformer.roiformer import RoiFormer
+
 import pdb
+
+
+def get_fusion_module_class(fusion_type: str):
+    if fusion_type == 'cma':
+        return CMA
+    elif fusion_type == 'roiformer':
+        return RoiFormer
+    else:
+        raise NotImplementedError()
 
 
 class TrainerParallel(nn.Module):
@@ -30,10 +42,10 @@ class TrainerParallel(nn.Module):
             'pose': PoseDecoder(self.models['pose_encoder'].num_ch_enc)
         })
 
-        # CMA: Crosstask Multiembedding Attention Moduel, by default, we enable this module.
-        if not self.opt.no_cma:  # default True
+        if not self.opt.no_fusion:  # default True
+            fusion_module_class = get_fusion_module_class(options.fusion_type)
             self.models.update({
-                'decoder': CMA(self.models['encoder'].num_ch_enc, opt=self.opt)
+                'decoder': fusion_module_class(self.models['encoder'].num_ch_enc, opt=self.opt)
             })
 
         else:
@@ -111,7 +123,7 @@ class TrainerParallel(nn.Module):
             T = transformation_from_parameters(axisangle[:, 0], translation[:, 0], invert=frame_id < 0)
             outputs[("T", frame_id)] = T
 
-        if not self.opt.no_cma:
+        if not self.opt.no_fusion:
             disp, seg = self.models['decoder'](features[0])
             outputs.update(disp)
             for s in self.opt.scales:

@@ -2,6 +2,7 @@ import json
 import os
 import time
 from datetime import datetime
+import importlib
 
 import torch
 import torch.nn.functional as F
@@ -169,7 +170,8 @@ class Trainer:
 
             # log less frequently after the first 2000 steps to save time & disk space
             early_phase = batch_idx % 250 == 0 and self.step < 2000
-            late_phase = self.step % 2000 == 0
+            # late_phase = self.step % 2000 == 0
+            late_phase = self.step % 250 == 0
             # late_phase = self.step % (len(self.train_loader) // self.opt.batch_size // 2) == 0
 
             for loss_type in losses:
@@ -413,6 +415,11 @@ if __name__ == '__main__':
     options = Options()
     opts = options.parse()
 
-    if __name__ == "__main__":
-        trainer = Trainer(opts)
-        trainer.train()
+    if opts.config is not None:
+        config_module = importlib.import_module('configs.{}'.format(opts.config))
+        opts.__dict__.update(config_module.cfg)
+        opts.model_name = opts.config
+
+    print(f'--- fusion_type: {opts.fusion_type}')
+    trainer = Trainer(opts)
+    trainer.train()
