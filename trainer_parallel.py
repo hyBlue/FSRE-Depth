@@ -2,27 +2,15 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from networks.cma import CMA
 from networks.depth_decoder import DepthDecoder
 from networks.pose_decoder import PoseDecoder
 from networks.resnet_encoder import ResnetEncoder
 from networks.seg_decoder import SegDecoder
 from utils.depth_utils import BackprojectDepth, Project3D, disp_to_depth, SSIM, get_smooth_loss, \
     transformation_from_parameters
-
-from networks.cma import CMA
-from networks.roiformer.roiformer import RoiFormer
+from networks import fusion_utils
 
 import pdb
-
-
-def get_fusion_module_class(fusion_type: str):
-    if fusion_type == 'cma':
-        return CMA
-    elif fusion_type == 'roiformer':
-        return RoiFormer
-    else:
-        raise NotImplementedError()
 
 
 class TrainerParallel(nn.Module):
@@ -43,7 +31,7 @@ class TrainerParallel(nn.Module):
         })
 
         if not self.opt.no_fusion:  # default True
-            fusion_module_class = get_fusion_module_class(options.fusion_type)
+            fusion_module_class = fusion_utils.get_fusion_module_class(options.fusion_type)
             self.models.update({
                 'decoder': fusion_module_class(self.models['encoder'].num_ch_enc, opt=self.opt)
             })

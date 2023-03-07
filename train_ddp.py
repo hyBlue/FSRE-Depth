@@ -93,7 +93,7 @@ class Trainer:
             num_workers=self.opt.batch_size, pin_memory=True, drop_last=True, sampler=train_sampler)
         self.val_loader = DataLoader(
             val_dataset, self.opt.batch_size, False,
-            num_workers=self.opt.batch_size, pin_memory=True, drop_last=True, sampler=val_sampler)
+            num_workers=0, pin_memory=True, drop_last=True, sampler=val_sampler)
         print(f'PROC {self.opt.local_rank}: SET TRAIN LOADER. SIZE {len(self.train_loader)}')
         print(f'PROC {self.opt.local_rank}: SET VAL LOADER. SIZE {len(self.val_loader)}')
 
