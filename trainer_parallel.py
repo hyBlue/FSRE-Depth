@@ -6,6 +6,8 @@ from networks.cma import CMA
 from networks.depth_decoder import DepthDecoder
 from networks.pose_decoder import PoseDecoder
 from networks.resnet_encoder import ResnetEncoder
+from networks.mbnetv2_encoder import Mbnetv2Encoder
+from networks.vovnet_encoder import VovNetEncoder
 from networks.seg_decoder import SegDecoder
 from utils.depth_utils import BackprojectDepth, Project3D, disp_to_depth, SSIM, get_smooth_loss, \
     transformation_from_parameters
@@ -16,11 +18,14 @@ class TrainerParallel(nn.Module):
         super(TrainerParallel, self).__init__()
         self.opt = options
         self.epoch = 0
+        
+        encoder_dict = {"resnet": ResnetEncoder, "mbnetv2": Mbnetv2Encoder, "vovnet": VovNetEncoder}
+        encoder = encoder_dict[self.opt.encoder]
 
         self.models = nn.ModuleDict({
-            'encoder': ResnetEncoder(num_layers=self.opt.num_layers, pretrained=self.opt.pretrained,
+            'encoder': encoder(num_layers=self.opt.num_layers, pretrained=self.opt.pretrained,
                                      ),
-            'pose_encoder': ResnetEncoder(num_layers=18, num_input_images=2,
+            'pose_encoder': encoder(num_layers=18, num_input_images=2,
                                           pretrained=self.opt.pretrained),
         })
 

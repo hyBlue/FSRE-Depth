@@ -9,6 +9,8 @@ from datasets.kitti_dataset import KittiDataset
 from networks.cma import CMA
 from networks.depth_decoder import DepthDecoder
 from networks.resnet_encoder import ResnetEncoder
+from networks.mbnetv2_encoder import Mbnetv2Encoder
+from networks.vovnet_encoder import VovNetEncoder
 from options import Options
 from utils import readlines
 from utils.depth_utils import disp_to_depth
@@ -71,7 +73,10 @@ def evaluate(opt):
                                num_scales=len(opt.scales))
         dataloader = DataLoader(dataset, 16, shuffle=False, num_workers=12,
                                 pin_memory=True, drop_last=False)
-        encoder = ResnetEncoder(num_layers=opt.num_layers)
+        _encoder_dict = {"resnet": ResnetEncoder, "mbnetv2": Mbnetv2Encoder, "vovnet": VovNetEncoder}
+        _encoder = _encoder_dict[opt.encoder]
+        
+        encoder = _encoder(num_layers=opt.num_layers)
 
         if not opt.no_cma:
             depth_decoder = CMA(encoder.num_ch_enc, opt=opt)

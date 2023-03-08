@@ -77,6 +77,10 @@ class Options:
                                  type=int,
                                  default=1,
                                  help='use ImageNet pretrained weight for ResNet encoder')
+        self.parser.add_argument("--encoder",
+                                 type=str,
+                                 default="resnet",
+                                 choices=["resnet", "mbnetv2", "vovnet"])
         # OPTIMIZATION options
 
         # Please use two gpus to set total batch size as 12, or use one gpu and set change option into 12
