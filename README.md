@@ -1,4 +1,11 @@
 # FSRE-Depth
+## Add mobilenetv2 and vovnet v2 encoder
+### Usage
+```
+--encoder (resnet, mbnetv2, vovnet)
+```
+### Preparation
+Download pretrained vovnet weight [VoVNetV2-19-Slim](https://www.dropbox.com/s/8h5ybmi4ftbcom0/vovnet19_ese_slim_detectron2.pth) from this [repo](https://github.com/youngwanLEE/vovnet-detectron2) and store it at the project directory.  
 This is a Python3 / PyTorch implementation of FSRE-Depth, as described in the following paper:
 
 > **Fine-grained Semantics-aware Representation Enhancement for Self-supervisedMonocular Depth Estimation**
