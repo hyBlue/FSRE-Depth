@@ -9,7 +9,7 @@ class CMA(nn.Module):
         super(CMA, self).__init__()
 
         self.scales = opt.scales
-        cma_layers = opt.cma_layers
+        fusion_layers = opt.fusion_layers
         self.opt = opt
         self.num_ch_dec = np.array([16, 32, 64, 128, 256])
         in_channels_list = [32, 64, 128, 256, 16]
@@ -24,7 +24,7 @@ class CMA(nn.Module):
 
         att_d_to_s = {}
         att_s_to_d = {}
-        for i in cma_layers:
+        for i in fusion_layers:
             att_d_to_s[str(i)] = MultiEmbedding(in_channels=in_channels_list[i],
                                                 num_head=opt.num_head,
                                                 ratio=opt.head_ratio)
@@ -65,8 +65,8 @@ class CMA(nn.Module):
             x_d = self.depth_decoder.decoder[-2 * i + 9](x_d)
             x_s = self.seg_decoder.decoder[-2 * i + 9](x_s)
 
-            if (i - 1) in self.opt.cma_layers:
-                if len(self.opt.cma_layers) == 1:
+            if (i - 1) in self.opt.fusion_layers:
+                if len(self.opt.fusion_layers) == 1:
                     x_d_att = self.att_d_to_s(x_d, x_s)
                     x_s_att = self.att_s_to_d(x_s, x_d)
                     x_d = x_d_att

@@ -1,4 +1,5 @@
 import os
+import importlib
 
 import cv2
 import numpy as np
@@ -6,11 +7,13 @@ import torch
 from torch.utils.data import DataLoader
 
 from datasets.kitti_dataset import KittiDataset
-from networks.cma import CMA
 from networks.depth_decoder import DepthDecoder
 from networks.resnet_encoder import ResnetEncoder
+
 from networks.mbnetv2_encoder import Mbnetv2Encoder
 from networks.vovnet_encoder import VovNetEncoder
+from networks import fusion_utils
+
 from options import Options
 from utils import readlines
 from utils.depth_utils import disp_to_depth
@@ -78,8 +81,9 @@ def evaluate(opt):
         
         encoder = _encoder(num_layers=opt.num_layers)
 
-        if not opt.no_cma:
-            depth_decoder = CMA(encoder.num_ch_enc, opt=opt)
+        if not opt.no_fusion:
+            fusion_model =  fusion_utils.get_fusion_module_class(options.fusion_type)
+            depth_decoder = fusion_model(encoder.num_ch_enc, opt=opt)
             decoder_path = os.path.join(opt.load_weights_folder, "decoder.pth")
         else:
             depth_decoder = DepthDecoder(encoder.num_ch_enc, scales=opt.scales, opt=opt)
@@ -108,7 +112,7 @@ def evaluate(opt):
                     data[key] = data[key].cuda()
                 input_color = data[("color", 0, 0)]
                 features = models['encoder'](input_color)
-                if not opt.no_cma:
+                if not opt.no_fusion:
                     output, _ = models['depth'](features)
                 else:
                     output = models["depth"](features)
@@ -210,5 +214,9 @@ def evaluate(opt):
 
 
 if __name__ == "__main__":
-    options = Options()
-    evaluate(options.parse())
+    options = Options().parse()
+    if options.config is not None:
+        config_module = importlib.import_module('configs.{}'.format(options.config))
+        options.__dict__.update(config_module.cfg)
+        options.model_name =  options.config
+    evaluate(options)

@@ -7,12 +7,14 @@ class Options:
     def __init__(self):
         self.parser = argparse.ArgumentParser()
 
-
+        self.parser.add_argument('--config',
+                                type=str,
+                                required=True,
+                                help='train config file path')
         # PATHS
         self.parser.add_argument("--data_path",
                                  type=str,
                                  help="path to the training data",
-                                 required=True,
                                  )
         self.parser.add_argument("--log_dir",
                                  type=str,
@@ -164,11 +166,14 @@ class Options:
                                  help='kernel size (local patch size) for sgt loss')
 
         # Corss-task Multi-embedding Module options
-        self.parser.add_argument("--no_cma", action='store_true', default=False, help='disable cma module')
+        self.parser.add_argument("--no_fusion", action='store_true', default=False, help='Do not fuse depth and segment')
+        self.parser.add_argument("--fusion_type", type=str, default='cma',
+                                help="the name of fusion module")
         self.parser.add_argument("--num_head", type=int, default=4, help='number of embeddings H for cma module')
         self.parser.add_argument("--head_ratio", type=float, default=2, help='embedding dimension ratio for cma module')
-        self.parser.add_argument("--cma_layers", nargs="+", type=int, default=[3, 2, 1],
-                                 help='layer configurations for cma module')
+        self.parser.add_argument("--fusion_layers", nargs="+", type=int, default=[3, 2, 1],
+                                 help='layer configurations for fusion module')
+
 
     def parse(self):
         self.options = self.parser.parse_args()

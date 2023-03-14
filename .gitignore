@@ -133,3 +133,6 @@ dmypy.json
 tmp/
 nohup.out
 gt_depths.npz
+
+.vscode/
+/data/

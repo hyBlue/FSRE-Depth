@@ -43,6 +43,8 @@ For training the full model, run the command as below:
 CUDA_VISIBLE_DEVICES=0,1 python -m torch.distributed.launch --nproc_per_node 2 --master_port YOUR_PORT_NUMBER train_ddp.py --data_path YOUR_KITTI_DATA_PATH
 ```
 
+* Notes: train_ddp.py, the val thread should be set to 0 to avoid error. And the train data loader worker thread might need tune down to 4 or 2. 
+
 ## Evaluation
 The ground truth depth maps should be prepared prior to evaluation. 
 ```

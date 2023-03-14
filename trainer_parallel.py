@@ -2,7 +2,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from networks.cma import CMA
 from networks.depth_decoder import DepthDecoder
 from networks.pose_decoder import PoseDecoder
 from networks.resnet_encoder import ResnetEncoder
@@ -11,6 +10,9 @@ from networks.vovnet_encoder import VovNetEncoder
 from networks.seg_decoder import SegDecoder
 from utils.depth_utils import BackprojectDepth, Project3D, disp_to_depth, SSIM, get_smooth_loss, \
     transformation_from_parameters
+from networks import fusion_utils
+
+import pdb
 
 
 class TrainerParallel(nn.Module):
@@ -33,9 +35,10 @@ class TrainerParallel(nn.Module):
             'pose': PoseDecoder(self.models['pose_encoder'].num_ch_enc)
         })
 
-        if not self.opt.no_cma:
+        if not self.opt.no_fusion:  # default True
+            fusion_module_class = fusion_utils.get_fusion_module_class(options.fusion_type)
             self.models.update({
-                'decoder': CMA(self.models['encoder'].num_ch_enc, opt=self.opt)
+                'decoder': fusion_module_class(self.models['encoder'].num_ch_enc, opt=self.opt)
             })
 
         else:
@@ -93,6 +96,7 @@ class TrainerParallel(nn.Module):
         features = {}
         center = inputs[("color_aug", 0, 0)]
 
+        # For the default encoder (ResNet), the encoder's output is the C1, C2, ... , C5 of ResNet.
         features[0] = self.models["encoder"](center)
         for frame_id in self.opt.frame_ids[1:]:
             color_aug = inputs[("color_aug", frame_id, 0)]
@@ -112,7 +116,7 @@ class TrainerParallel(nn.Module):
             T = transformation_from_parameters(axisangle[:, 0], translation[:, 0], invert=frame_id < 0)
             outputs[("T", frame_id)] = T
 
-        if not self.opt.no_cma:
+        if not self.opt.no_fusion:
             disp, seg = self.models['decoder'](features[0])
             outputs.update(disp)
             for s in self.opt.scales:
