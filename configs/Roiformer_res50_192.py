@@ -13,7 +13,7 @@ cfg.num_layers = 50
 
 #cfg.base_seed = 42
 
-cfg.data_path = './data/KITTI'
+cfg.data_path = './data/Kitti'
 
 # Optimization 
 cfg.learning_rate = 1.5e-4  
