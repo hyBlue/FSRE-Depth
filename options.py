@@ -173,6 +173,8 @@ class Options:
         self.parser.add_argument("--head_ratio", type=float, default=2, help='embedding dimension ratio for cma module')
         self.parser.add_argument("--fusion_layers", nargs="+", type=int, default=[3, 2, 1],
                                  help='layer configurations for fusion module')
+        self.parser.add_argument("--adaptive_attn", action='store_true',
+                                help="Use adaptive attention weights.")
 
 
     def parse(self):

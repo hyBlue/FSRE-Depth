@@ -38,7 +38,8 @@ class RoiFormer(nn.Module):
                                                 num_att_points=opt.num_att_points[i], 
                                                 num_att_layers = opt.num_att_layers,
                                                 min_a=opt.anchor_min,
-                                                max_a=opt.anchor_max
+                                                max_a=opt.anchor_max,
+                                                adaptive_attn=self.opt.adaptive_attn
                                                 ) for k in range(self.num_local_att)])
         self.att_local = nn.ModuleDict(att_local)
 

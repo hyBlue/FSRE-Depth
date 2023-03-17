@@ -169,9 +169,9 @@ class Trainer:
             gpu_time += duration
 
             # log less frequently after the first 2000 steps to save time & disk space
-            early_phase = batch_idx % 250 == 0 and self.step < 2000
+            early_phase = batch_idx % 200 == 0 and self.step < 2000
             # late_phase = self.step % 2000 == 0
-            late_phase = self.step % 250 == 0
+            late_phase = self.step % 200 == 0
             # late_phase = self.step % (len(self.train_loader) // self.opt.batch_size // 2) == 0
 
             for loss_type in losses:
@@ -421,5 +421,6 @@ if __name__ == '__main__':
         opts.model_name = opts.config
 
     print(f'--- fusion_type: {opts.fusion_type}')
+    print(f'--- adaptive_attn: {opts.adaptive_attn}')
     trainer = Trainer(opts)
     trainer.train()

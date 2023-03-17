@@ -16,41 +16,20 @@ def W(in_channels, out_channels):
 
     )
 
-def AnchorAttnFunction(
-        value, sampling_locations, attention_weights
-    ):
-    """
-    Params:
-    :value: (B, C, H, W)
-    :sampling_locations: (B, L1, nheads, npoints, 2)
-    :attention_weights: (B, L1, nheads, npoints)
-
-    Return:
-    :output: (B, L1, C)
-    """
-    b, l1, nheads, npoints = attention_weights.shape
-    h, w = value.shape[2:]
-
-    sampled_v = value.view(b * nheads, -1, h, w)
-    grid = sampling_locations.transpose(1, 2)
-    grid = 2 * grid.contiguous().view(b * nheads, l1, npoints, 2) - 1.
-    sampled_v = F.grid_sample(sampled_v, grid, align_corners=True)
-    sampled_v = sampled_v.reshape(b, nheads, -1, l1, npoints).permute(0, 3, 1, 2, 4).contiguous()
-    sampled_v = (attention_weights.unsqueeze(-2) * sampled_v).sum(
-        dim=-1
-    )
-    return sampled_v #B, L, n_head, head_dim
-
 
 class AnchorDeformAtt(nn.Module):
     
-    def __init__(self, in_channels, num_head, num_att_points=16, min_a=0.25, max_a=0.75):
+    def __init__(self, in_channels, num_head, num_att_points=16, min_a=0.25, max_a=0.75, adaptive_attn=False):
         super(AnchorDeformAtt, self).__init__()
         self.num_head = num_head
         self.num_att_points = num_att_points
         self.head_dim = in_channels//num_head
         self.min = min_a
         self.max = max_a
+        self.adaptive_attn = adaptive_attn
+
+        # print(f'adaptive_attn={self.adaptive_attn}')
+
         self.size_deform = nn.Sequential(
                     nn.Conv2d(in_channels, num_head*2, kernel_size=(1,1), stride=(1,1), bias=True),
                     nn.Sigmoid()
@@ -60,7 +39,10 @@ class AnchorDeformAtt(nn.Module):
                 nn.Sigmoid()
         )
         self.value_proj = nn.Conv2d(in_channels, in_channels, kernel_size=(1,1), stride=(1,1), bias=True)
-        self.anchor_att = nn.Conv2d(in_channels, num_head*self.num_att_points, kernel_size=(1,1), stride=(1,1), bias=True)
+        if self.adaptive_attn:
+            self.query_proj = nn.Conv2d(in_channels, in_channels, kernel_size=(1, 1))
+        else:
+            self.anchor_att = nn.Conv2d(in_channels, num_head*self.num_att_points, kernel_size=(1,1), stride=(1,1), bias=True)
 
         self.out_proj = nn.Sequential(
                     nn.Conv2d(in_channels=in_channels, out_channels=in_channels, kernel_size=1, stride=1, bias=False),
@@ -106,31 +88,64 @@ class AnchorDeformAtt(nn.Module):
         #print(size, center)
         ref_box = torch.cat([center, size], dim=-1) # cx, cy, H, W
         return ref_box  # B, HW, n_head, 4
+    
+    def anchor_attn(self, value, sampling_locations, query):
+        """
+        Params:
+            :value: (B, C, H, W), value pool
+            :sampling_locations: (B, L1, nheads, npoints, 2)
+            :query: (B, C, H, W), query
+
+        Return:
+            :output: (B, C, H, W)
+        """
+        b, C, h, w = value.shape
+        _, l1, nheads, npoints, _ = sampling_locations.shape
+        assert l1 == h * w
+
+        # (B*nhead, C/nhead, h, w)
+        value_pool = value.view(b * nheads, -1, h, w)
+        grid = sampling_locations.transpose(1, 2)
+        # (B*nhead, l1, npoint, 2)
+        grid = 2 * grid.contiguous().view(b * nheads, l1, npoints, 2) - 1.
+        # (B*nheads, C/nheads, l1, npoints)
+        sampled_v = F.grid_sample(value_pool, grid, align_corners=True)
+        # (B, l1, nhead, C/nhead, npoints)
+        sampled_v = sampled_v.reshape(b, nheads, -1, l1, npoints).permute(0, 3, 1, 2, 4).contiguous()
+
+        if self.adaptive_attn:
+            # (B, l1, nhead, C/nhead)
+            p_query = self.query_proj(query).reshape(b, nheads, -1, l1).permute(0, 3, 1, 2).contiguous()
+            # (B, l1, nhead, 1, C/nhead)
+            p_query = p_query.unsqueeze(-2)
+            # (B, l1, nhead, 1, npoints)
+            attn_weights = torch.matmul(p_query, sampled_v)
+        else:
+            # (B, l1, nhead, 1, npoints)
+            attn_weights = self.anchor_att(query).flatten(2).permute(0,2,1).contiguous().reshape(b, l1, nheads, npoints).unsqueeze(-2)
+        # Logit to prob
+        attn_weights = F.softmax(attn_weights, dim=-1)
+        # B, l1, nhead, C/nhead
+        value_out = (attn_weights * sampled_v).sum(dim=-1)
+        # B, C, h, w
+        value_out = value_out.view(b, l1, C).permute(0,2,1).contiguous().reshape(b, C, h, w)
+        return value_out
 
     def forward(self, feat_sd):
-        memory = self.value_proj(feat_sd)
-        #pos_feat = self.pos_encoder(feat_sd)
+        memory = self.value_proj(feat_sd)  # B, C, H, W
 
         ref_windows = self._create_ref_windows(feat_sd)  # B, HW, n_head, 4
         grid = self._where_to_attend(feat_sd, ref_windows)  # B, HW, nhead, num_att_points, 2
         #print(grid.shape)
 
-        B, C, H, W = memory.shape
-        L = H * W
-        attn_weights = self.anchor_att(feat_sd).flatten(2).permute(0,2,1).contiguous().reshape(B, L, self.num_head, self.num_att_points)
-        attn_weights = F.softmax(attn_weights, dim=-1)
-        #print(attn_weights.shape)
-
-        value = AnchorAttnFunction(memory, grid, attn_weights)  #, B, HW, n_head, head_dim
-        #print(value.shape)
-        value = value.view(B, L, C).permute(0,2,1).contiguous().reshape(B, C, H, W)
-
+        value = self.anchor_attn(memory, grid, query=feat_sd)  # B, C, H, W
         value = self.out_proj(value)
         return value
 
 
 class LocalTransformer(nn.Module):
-    def __init__(self, in_channels, num_head, batch_norm=True, with_sem=True, num_att_points=16, num_att_layers = 2, min_a=0.25, max_a=0.75):
+    def __init__(self, in_channels, num_head, batch_norm=True, with_sem=True, num_att_points=16, num_att_layers = 2, min_a=0.25, max_a=0.75,
+                adaptive_attn=False):
         super(LocalTransformer, self).__init__()
         
         self.with_sem = with_sem
@@ -140,11 +155,13 @@ class LocalTransformer(nn.Module):
         self.num_att_layers = num_att_layers
 
         self.anchor_att_dep = nn.ModuleList(
-                    [AnchorDeformAtt(in_channels, num_head, num_att_points=num_att_points, min_a=min_a, max_a=max_a) for i in range(num_att_layers)]
+                    [AnchorDeformAtt(in_channels, num_head, num_att_points=num_att_points, min_a=min_a, max_a=max_a, adaptive_attn=adaptive_attn)
+                        for i in range(num_att_layers)]
         )
         if self.with_sem:
             self.anchor_att_seg = nn.ModuleList(
-                        [AnchorDeformAtt(in_channels, num_head, num_att_points=num_att_points, min_a=min_a, max_a=max_a) for i in range(num_att_layers)]
+                        [AnchorDeformAtt(in_channels, num_head, num_att_points=num_att_points, min_a=min_a, max_a=max_a, adaptive_attn=adaptive_attn)
+                            for i in range(num_att_layers)]
             )
         
         if self.with_sem:
